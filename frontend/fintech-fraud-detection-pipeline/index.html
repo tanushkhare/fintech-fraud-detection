@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinTech Fraud Detection Pipeline</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="logo">⚡ FinTech Fraud Detection Pipeline</div>
+      <div class="badge">Live Microservice Active</div>
+    </div>
+  </header>
+
+  <main class="main-layout">
+    <section class="panel-left">
+      <h2>Transaction Ingestion & Risk Scoring</h2>
+      <p class="subtitle">Real-time fraud scoring evaluating monetary thresholds, geo-velocity deviations, and device fingerprint trust levels.</p>
+
+      <div class="metric-row">
+        <div style="flex: 1;">
+          <label style="font-size:0.85rem; color:#94a3b8;">Transaction Amount ($)</label>
+          <input type="number" id="txAmount" class="text-input" value="1850.00" step="10">
+        </div>
+        <div style="flex: 1;">
+          <label style="font-size:0.85rem; color:#94a3b8;">Merchant Category</label>
+          <select id="merchantCategory" class="text-input">
+            <option value="Crypto Exchange" selected>Crypto Exchange</option>
+            <option value="Wire Transfer">Wire Transfer</option>
+            <option value="E-Commerce">E-Commerce</option>
+            <option value="Point of Sale">Point of Sale</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="geoScore">Geo-Velocity Anomaly Score: <span id="geoVal" style="color:#38bdf8;">0.75</span></label>
+        <input type="range" id="geoScore" min="0" max="1" step="0.05" value="0.75" class="text-input" oninput="document.getElementById('geoVal').innerText = this.value">
+      </div>
+
+      <div class="input-group">
+        <label for="deviceTrust">Device Trust Level: <span id="trustVal" style="color:#34d399;">0.20</span></label>
+        <input type="range" id="deviceTrust" min="0" max="1" step="0.05" value="0.20" class="text-input" oninput="document.getElementById('trustVal').innerText = this.value">
+      </div>
+
+      <button class="btn primary-btn" onclick="scoreTransaction()">Evaluate Transaction Risk</button>
+
+      <div class="log-card">
+        <h4>Model Telemetry</h4>
+        <div id="logBox" class="terminal-log">Anomaly detection engine ready...</div>
+      </div>
+    </section>
+
+    <aside class="panel-right">
+      <h2>Fraud Classification Verdict</h2>
+
+      <div class="metric-row">
+        <div class="metric-card">
+          <span class="label">Composite Risk Index</span>
+          <span class="value" id="riskScore">--</span>
+        </div>
+        <div class="metric-card">
+          <span class="label">Decision</span>
+          <span class="value" id="decisionVal" style="font-size: 1.1rem; padding-top: 0.4rem;">--</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Risk Telemetry & Flags</h3>
+        <ul id="riskFactors">
+          <li>Submit transaction to analyze risk factors.</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    async function scoreTransaction() {
+      const amount = parseFloat(document.getElementById('txAmount').value);
+      const merchant = document.getElementById('merchantCategory').value;
+      const geo = parseFloat(document.getElementById('geoScore').value);
+      const trust = parseFloat(document.getElementById('deviceTrust').value);
+      const log = document.getElementById('logBox');
+
+      log.innerText = `[${new Date().toLocaleTimeString()}] Ingesting transaction: $${amount} @ ${merchant}\n[${new Date().toLocaleTimeString()}] Querying endpoint: /api/v1/score...`;
+
+      const payload = {
+        amount: amount,
+        merchant_category: merchant,
+        geo_velocity_score: geo,
+        device_trust_score: trust
+      };
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/v1/score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+
+        const data = await res.json();
+        document.getElementById('riskScore').innerText = data.risk_score;
+        document.getElementById('riskScore').style.color = data.is_fraud ? "#f87171" : "#34d399";
+
+        document.getElementById('decisionVal').innerText = data.status_text;
+        document.getElementById('decisionVal').style.color = data.is_fraud ? "#f87171" : "#34d399";
+
+        document.getElementById('riskFactors').innerHTML = data.risk_factors
+          .map(f => `<li><code>${f}</code></li>`).join('');
+
+        log.innerText += `\n[${new Date().toLocaleTimeString()}] 200 OK: Transaction scored successfully!`;
+      } catch (err) {
+        log.innerText += `\n[${new Date().toLocaleTimeString()}] Note: Backend offline (${err.message}). Running local client calculation.`;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,9 +1,9 @@
-from fastapi import APIRouter
-from app.schemas.fraud import TransactionRequest, FraudResponse
-from app.services.fraud_service import evaluate_transaction
+﻿from fastapi import APIRouter
+from backend.app.schemas.fraud import TransactionScoreRequest, TransactionScoreResponse
+from backend.app.services.fraud_service import fraud_service
 
-router = APIRouter(prefix="/api", tags=["Fraud Detection"])
+router = APIRouter(prefix="/api/v1", tags=["Fraud Detection Engine"])
 
-@router.post("/check", response_model=FraudResponse)
-def check_fraud(payload: TransactionRequest):
-    return evaluate_transaction(payload)
+@router.post("/score", response_model=TransactionScoreResponse)
+async def score_transaction(payload: TransactionScoreRequest):
+    return fraud_service.evaluate(payload)

@@ -1,32 +1,27 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from pydantic import BaseModel
+﻿from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from backend.app.routers.fraud import router as fraud_router
 import uvicorn
 
-app = FastAPI(title="AI Resume Analyzer API", version="1.0.0")
+app = FastAPI(
+    title="FinTech Real-Time Fraud Detection Engine",
+    description="High-throughput transaction scoring pipeline with geo-velocity and device trust evaluation.",
+    version="1.0.0"
+)
 
-class HealthResponse(BaseModel):
-    status: str
-    service: str
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/health", response_model=HealthResponse)
-async def health_check():
-    return {"status": "healthy", "service": "ai-resume-analyzer-backend"}
+app.include_router(fraud_router)
 
-@app.post("/api/v1/analyze")
-async def analyze_resume(file: UploadFile = File(...)):
-    if not file.filename.endswith((".pdf", ".docx", ".txt")):
-        raise HTTPException(status_code=400, detail="Invalid file format. Please upload PDF, DOCX, or TXT.")
-    
-    # Production-ready parsing and keyword alignment simulation
-    return {
-        "filename": file.filename,
-        "match_score": 92.4,
-        "extracted_skills": ["Python", "FastAPI", "Docker", "Pydantic", "SQLAlchemy"],
-        "recommendations": [
-            "Strong alignment with backend engineering requirements.",
-            "Consider highlighting cloud deployment (AWS/Terraform) metrics."
-        ]
-    }
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "service": "fintech-fraud-detection"}
 
 if __name__ == "__main__":
-    uvicorn.main(["main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"])
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
