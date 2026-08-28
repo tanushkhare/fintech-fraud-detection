@@ -1,30 +1,65 @@
-﻿from backend.app.schemas.fraud import TransactionScoreRequest, TransactionScoreResponse
+﻿from datetime import datetime, timezone
+from typing import Dict, Any, List
 
-class FraudScoringEngine:
-    @staticmethod
-    def evaluate(payload: TransactionScoreRequest) -> TransactionScoreResponse:
-        amount_factor = min(payload.amount / 5000.0, 1.0) * 0.35
-        geo_factor = payload.geo_velocity_score * 0.40
-        trust_factor = (1.0 - payload.device_trust_score) * 0.25
+class FintechFraudEngine:
+    def evaluate_transaction(
+        self,
+        txn_id: str,
+        amount: float,
+        country: str,
+        is_foreign: bool,
+        velocity: int,
+        device_trust: float
+    ) -> Dict[str, Any]:
+        risk_score = 0.05
+        factors: List[str] = []
 
-        risk_score = round(min(max(amount_factor + geo_factor + trust_factor, 0.0), 1.0), 2)
-        is_fraud = risk_score >= 0.65
+        # 1. Amount threshold heuristic
+        if amount > 5000.0:
+            risk_score += 0.35
+            factors.append(f"High transaction value (${amount:,.2f})")
+        elif amount > 1500.0:
+            risk_score += 0.15
+            factors.append("Elevated transaction value ($1.5k+)")
 
-        factors = []
-        if payload.amount >= 2000.0:
-            factors.append(f"High monetary velocity (${payload.amount:,.2f})")
-        if payload.geo_velocity_score >= 0.5:
-            factors.append(f"Geo-velocity anomaly detected (Score: {payload.geo_velocity_score})")
-        if payload.device_trust_score <= 0.4:
-            factors.append(f"Untrusted device signature (Trust: {payload.device_trust_score})")
+        # 2. Velocity spike check
+        if velocity >= 5:
+            risk_score += 0.30
+            factors.append(f"High transaction velocity ({velocity} txns/hr)")
+        elif velocity >= 3:
+            risk_score += 0.15
+            factors.append(f"Moderate velocity surge ({velocity} txns/hr)")
+
+        # 3. Foreign origin and device trustworthiness
+        if is_foreign:
+            risk_score += 0.15
+            factors.append("Cross-border foreign transaction origin")
+
+        if device_trust < 0.50:
+            risk_score += 0.25
+            factors.append(f"Untrusted or unrecognized client device (Trust: {device_trust})")
+
+        risk_score = round(min(0.99, max(0.01, risk_score)), 3)
+        fraud_prob = round(risk_score * 100, 1)
+
+        if risk_score >= 0.70:
+            verdict = "BLOCK_TRANSACTION"
+        elif risk_score >= 0.40:
+            verdict = "FLAG_FOR_MANUAL_REVIEW"
+        else:
+            verdict = "APPROVE_TRANSACTION"
+
         if not factors:
-            factors.append("Nominal device and transaction telemetry metrics")
+            factors.append("Standard behavioral baseline match")
 
-        return TransactionScoreResponse(
-            is_fraud=is_fraud,
-            risk_score=risk_score,
-            status_text="FRAUD DETECTED" if is_fraud else "LEGITIMATE TRANSACTION",
-            risk_factors=factors
-        )
+        return {
+            "transaction_id": txn_id,
+            "amount_usd": amount,
+            "risk_score": risk_score,
+            "fraud_probability": fraud_prob,
+            "decision_verdict": verdict,
+            "risk_factors": factors,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
 
-fraud_service = FraudScoringEngine()
+fraud_engine = FintechFraudEngine()

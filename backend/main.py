@@ -1,11 +1,11 @@
 ﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.routers.fraud import router as fraud_router
+from backend.app.routers import fraud_router
 import uvicorn
 
 app = FastAPI(
-    title="FinTech Real-Time Fraud Detection Engine",
-    description="High-throughput transaction scoring pipeline with geo-velocity and device trust evaluation.",
+    title="Fintech Fraud Detection & Risk Scoring API",
+    description="Real-time transaction risk scoring, velocity anomaly detection, and fraud classification engine.",
     version="1.0.0"
 )
 
@@ -17,10 +17,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(fraud_router)
+app.include_router(fraud_router.router)
 
 @app.get("/health")
-async def health():
+async def health_check():
     return {"status": "healthy", "service": "fintech-fraud-detection"}
 
 if __name__ == "__main__":
