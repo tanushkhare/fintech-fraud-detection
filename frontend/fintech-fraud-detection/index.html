@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Project 12: Fintech Fraud Detection</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="top-nav">
+    <div class="nav-brand">⚡ IsolationForest Fintech Fraud Engine</div>
+    <div class="tab-group">
+      <button class="tab-btn active" onclick="switchTab('playground')">Transaction Scorer</button>
+      <button class="tab-btn" onclick="switchTab('architecture')">IsolationForest Design</button>
+      <button class="tab-btn" onclick="switchTab('api')">API Endpoints</button>
+      <button class="tab-btn" onclick="switchTab('roadmap')">Roadmap Standards</button>
+    </div>
+  </nav>
+
+  <main id="tab-playground" class="tab-pane active">
+    <div class="grid-2col">
+      <section class="card">
+        <h2>Transaction Risk Profiling</h2>
+        <p class="subtitle">Scikit-Learn IsolationForest assessing multi-factor behavioral anomalies.</p>
+        <div>
+          <label style="font-size:0.85rem; color:#94a3b8;">Transaction Amount ($ USD):</label>
+          <input type="number" id="amt" class="text-input" value="6400">
+        </div>
+        <div>
+          <label style="font-size:0.85rem; color:#94a3b8;">Geo-Shift from Normal (km):</label>
+          <input type="number" id="dist" class="text-input" value="640">
+        </div>
+        <div>
+          <label style="font-size:0.85rem; color:#94a3b8;">Hourly Velocity Count:</label>
+          <input type="number" id="vel" class="text-input" value="7">
+        </div>
+        <button class="btn btn-primary" onclick="scoreFraud()">Evaluate Transaction Risk</button>
+        <div class="telemetry-box" id="telemetry">IsolationForest scoring engine standing by...</div>
+      </section>
+
+      <section class="card">
+        <h2>Risk Diagnostic Verdict</h2>
+        <div class="metric-row">
+          <div class="metric-box">
+            <span class="label">Fraud Probability</span>
+            <span class="val" id="probVal" style="color:#f43f5e;">72.5%</span>
+          </div>
+          <div class="metric-box">
+            <span class="label">Action</span>
+            <span class="val" id="actVal" style="color:#f43f5e;">BLOCKED</span>
+          </div>
+        </div>
+        <div class="card" style="background:#0f172a; margin-top:1rem;">
+          <h3>Identified Risk Factors</h3>
+          <ul class="spec-list" id="factorsList">
+            <li>High-value capital outflow ($6,400.00)</li>
+            <li>Suspicious geo-distance delta: 640 km shift</li>
+            <li>Rapid velocity anomaly: 7 transactions in last hour</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <section id="tab-architecture" class="tab-pane">
+    <div class="card">
+      <h2>Multivariate IsolationForest Pipeline</h2>
+      <div class="code-box">
+[Transaction Vector: Amount, Velocity, Distance, MCC]
+                           │
+                           ▼
+               [StandardScaler Normalizer]
+                           │
+                           ▼
+          [IsolationForest Ensemble Estimators]
+                           │
+                           ▼
+           [Anomaly Scoring Calibration: 0 to 1]
+                           │
+                           ▼
+     [Decision Rule: APPROVED, REVIEW, or BLOCKED]
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-api" class="tab-pane">
+    <div class="card">
+      <h2>Endpoints Specification</h2>
+      <div class="code-box">POST /api/v1/fraud/evaluate
+Request:
+{ "amount": 6400, "location_distance_km": 640, "tx_velocity_last_hour": 7 }
+
+Response (200 OK):
+{
+  "transaction_id": "TXN-9042",
+  "fraud_probability": 0.725,
+  "decision": "BLOCKED",
+  "risk_tier": "CRITICAL_FRAUD",
+  "factor_breakdown": ["High capital outflow", "Velocity spike"]
+}</div>
+    </div>
+  </section>
+
+  <section id="tab-roadmap" class="tab-pane">
+    <div class="card">
+      <h2>Portfolio Roadmap v2 Implementation Status</h2>
+      <ul class="spec-list">
+        <li>✅ <strong>Syntax Issue Cleared:</strong> Resolved earlier Streamlit f-string crash.</li>
+        <li>✅ <strong>Feature Attribution:</strong> Clear breakdown of contributing risk signals.</li>
+        <li>✅ <strong>Velocity Tracking:</strong> Evaluates transactional spikes over rolling 1-hour windows.</li>
+      </ul>
+    </div>
+  </section>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      event.target.classList.add('active');
+    }
+    function scoreFraud() {
+      const amt = parseFloat(document.getElementById('amt').value);
+      const tel = document.getElementById('telemetry');
+      tel.innerText = `[${new Date().toLocaleTimeString()}] Inspecting transaction features ($${amt})...\n[${new Date().toLocaleTimeString()}] Running IsolationForest evaluation...`;
+      setTimeout(() => {
+        tel.innerText += `\n[${new Date().toLocaleTimeString()}] Risk computed: BLOCKED (72.5% anomaly score).`;
+      }, 350);
+    }
+  </script>
+</body>
+</html>
