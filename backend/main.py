@@ -4,8 +4,8 @@ from backend.app.routers import fraud_router
 import uvicorn
 
 app = FastAPI(
-    title="Fintech Fraud Detection & Risk Scoring API",
-    description="Real-time transaction risk scoring, velocity anomaly detection, and fraud classification engine.",
+    title="Fintech Real-Time Fraud Detection Engine",
+    description="Isolation Forest anomaly evaluation and risk-scoring microservice.",
     version="1.0.0"
 )
 
@@ -20,7 +20,7 @@ app.add_middleware(
 app.include_router(fraud_router.router)
 
 @app.get("/health")
-async def health_check():
+async def health():
     return {"status": "healthy", "service": "fintech-fraud-detection"}
 
 if __name__ == "__main__":

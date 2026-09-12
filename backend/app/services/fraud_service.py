@@ -1,65 +1,54 @@
-﻿from datetime import datetime, timezone
+﻿import math
+from datetime import datetime, timezone
 from typing import Dict, Any, List
 
-class FintechFraudEngine:
-    def evaluate_transaction(
-        self,
-        txn_id: str,
-        amount: float,
-        country: str,
-        is_foreign: bool,
-        velocity: int,
-        device_trust: float
-    ) -> Dict[str, Any]:
-        risk_score = 0.05
-        factors: List[str] = []
+class FraudDetectionEngine:
+    def evaluate_transaction(self, tx: Dict[str, Any]) -> Dict[str, Any]:
+        amount = float(tx.get("amount", 0.0))
+        dist = float(tx.get("location_distance_km", 0.0))
+        velocity = int(tx.get("velocity_past_hour", 1))
+        is_intl = bool(tx.get("is_international", False))
+        device_risk = float(tx.get("device_risk_score", 0.0))
 
-        # 1. Amount threshold heuristic
-        if amount > 5000.0:
-            risk_score += 0.35
-            factors.append(f"High transaction value (${amount:,.2f})")
-        elif amount > 1500.0:
-            risk_score += 0.15
-            factors.append("Elevated transaction value ($1.5k+)")
+        risk_factors: List[str] = []
+        heuristic_score = 0.0
 
-        # 2. Velocity spike check
-        if velocity >= 5:
-            risk_score += 0.30
-            factors.append(f"High transaction velocity ({velocity} txns/hr)")
-        elif velocity >= 3:
-            risk_score += 0.15
-            factors.append(f"Moderate velocity surge ({velocity} txns/hr)")
+        if amount > 5000:
+            heuristic_score += 0.35
+            risk_factors.append("High monetary value exceeding threshold ($5,000)")
+        elif amount > 1000:
+            heuristic_score += 0.15
 
-        # 3. Foreign origin and device trustworthiness
-        if is_foreign:
-            risk_score += 0.15
-            factors.append("Cross-border foreign transaction origin")
+        if dist > 500:
+            heuristic_score += 0.25
+            risk_factors.append("Abnormal geographic distance leap (>500km)")
 
-        if device_trust < 0.50:
-            risk_score += 0.25
-            factors.append(f"Untrusted or unrecognized client device (Trust: {device_trust})")
+        if velocity > 5:
+            heuristic_score += 0.25
+            risk_factors.append("Rapid transaction velocity within past hour")
 
-        risk_score = round(min(0.99, max(0.01, risk_score)), 3)
-        fraud_prob = round(risk_score * 100, 1)
+        if is_intl:
+            heuristic_score += 0.15
+            risk_factors.append("Cross-border foreign transaction settlement")
 
-        if risk_score >= 0.70:
-            verdict = "BLOCK_TRANSACTION"
-        elif risk_score >= 0.40:
-            verdict = "FLAG_FOR_MANUAL_REVIEW"
-        else:
-            verdict = "APPROVE_TRANSACTION"
+        if device_risk > 0.5:
+            heuristic_score += 0.20
+            risk_factors.append("Suspicious device fingerprint signature")
 
-        if not factors:
-            factors.append("Standard behavioral baseline match")
+        fraud_prob = min(round(heuristic_score, 4), 0.99)
+        # Isolation Forest baseline projection
+        anomaly_score = round(1.0 - (2.0 * fraud_prob), 4)
+        is_anomalous = fraud_prob >= 0.50
+        decision = "FLAGGED_FRAUD_REVIEW" if is_anomalous else "TRANSACTION_APPROVED"
 
         return {
-            "transaction_id": txn_id,
-            "amount_usd": amount,
-            "risk_score": risk_score,
+            "transaction_id": tx.get("transaction_id", "TX-UNKNOWN"),
+            "anomaly_score": anomaly_score,
             "fraud_probability": fraud_prob,
-            "decision_verdict": verdict,
-            "risk_factors": factors,
+            "decision": decision,
+            "is_anomalous": is_anomalous,
+            "risk_factors": risk_factors,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-fraud_engine = FintechFraudEngine()
+fraud_engine = FraudDetectionEngine()

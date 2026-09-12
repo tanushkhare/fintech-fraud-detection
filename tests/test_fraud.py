@@ -9,33 +9,35 @@ def test_health():
     assert res.status_code == 200
     assert res.json()["status"] == "healthy"
 
-def test_high_risk_fraud_transaction():
+def test_legitimate_transaction():
     payload = {
-        "transaction_id": "TXN_SUSPICIOUS_01",
-        "amount_usd": 12000.0,
-        "location_country": "KY",
-        "is_foreign_transaction": True,
-        "velocity_1h_count": 8,
-        "device_trust_score": 0.20
+        "transaction_id": "TX-TEST-001",
+        "account_id": "ACC-TEST",
+        "amount": 45.00,
+        "location_distance_km": 2.0,
+        "velocity_past_hour": 1,
+        "is_international": False,
+        "device_risk_score": 0.05
     }
     res = client.post("/api/v1/fraud/evaluate", json=payload)
     assert res.status_code == 200
     data = res.json()
-    assert data["decision_verdict"] == "BLOCK_TRANSACTION"
-    assert data["risk_score"] >= 0.70
-    assert len(data["risk_factors"]) >= 3
+    assert data["is_anomalous"] is False
+    assert data["decision"] == "TRANSACTION_APPROVED"
 
-def test_low_risk_legitimate_transaction():
+def test_anomalous_fraud_transaction():
     payload = {
-        "transaction_id": "TXN_LEGIT_01",
-        "amount_usd": 45.0,
-        "location_country": "US",
-        "is_foreign_transaction": False,
-        "velocity_1h_count": 1,
-        "device_trust_score": 0.95
+        "transaction_id": "TX-FRAUD-999",
+        "account_id": "ACC-FLAGGED",
+        "amount": 9500.00,
+        "location_distance_km": 1200.0,
+        "velocity_past_hour": 9,
+        "is_international": True,
+        "device_risk_score": 0.85
     }
     res = client.post("/api/v1/fraud/evaluate", json=payload)
     assert res.status_code == 200
     data = res.json()
-    assert data["decision_verdict"] == "APPROVE_TRANSACTION"
-    assert data["risk_score"] < 0.40
+    assert data["is_anomalous"] is True
+    assert data["decision"] == "FLAGGED_FRAUD_REVIEW"
+    assert len(data["risk_factors"]) >= 3
